@@ -13,6 +13,79 @@ import logging
 from aiogram import Bot, Dispatcher, executor, types
 
 
+class DeliverJob:
+    from_client_label = '6315d77a20bc67029658fd2f'
+    to_client_label = '6315d77a20bc67029658fd38'
+    
+    def __init__(self, address, type_, description, user_name):
+        self.address = address
+        self.user_name = user_name
+        self.type_ = type_
+        self.area = address
+        self.description = description
+        self.custom_field_id = self.get_custom_field_id(self._area)
+        
+    def get_custom_field_id(self, area):
+        if area != 'Не определено':
+            _id = [k for k, v in areas_id.items() if area == v][0]
+            return _id
+        return ''
+        
+        
+    @property
+    def description(self):
+        return self._description
+    
+    @description.setter
+    def description(self, value):
+        if isinstance(value, list):
+            self._description = f'`Район: {self._area}`\n'+' '.join(value)
+        else:
+            self._description = f'`Район: {self._area}`\n'+value.title()
+
+    @property
+    def type_(self):
+        return self._type
+    
+    @type_.setter
+    def type_(self, value):
+        pattern = ['доставка', 'доставить', 'клиенту', 'к', 'до']
+        self._type = self.to_client_label if value.lower() in pattern else self.from_client_label
+    
+    @property
+    def address(self):
+        return self._address
+    
+    @address.setter
+    def address(self, value):
+        self._address = value.title()
+        
+    @property
+    def area(self):
+        return self._area
+    
+    @area.setter
+    def area(self, value):
+        def is_it_num(s):
+            for i in s:
+                try:
+                    int(i)
+                    return False
+                except ValueError:
+                    return True
+                
+        t =value.split(',')[0].split()
+        temp = [x for x in t if  all(map(is_it_num, x)) ]
+        street = ' '.join(temp).lower()
+        
+        for k, v in streets_map.items():
+            if street in v:
+                self._area = k
+                break
+        else:
+            self._area = 'Не определено'
+
+
 class TrelloConnector:
     headers = {
         "Accept": "application/json"
@@ -22,7 +95,7 @@ class TrelloConnector:
     #     ...
 
 
-    def create_card(self, DeliverJob):
+    def create_card(self, job: DeliverJob):
         '''creates a new card'''
         url = "https://api.trello.com/1/cards"
         
@@ -31,23 +104,23 @@ class TrelloConnector:
             'idList': todo_list_id,
             'key': api_key,
             'token': my_token,
-            'name': DeliverJob.address,
-            'desc': DeliverJob.description,
-            'idLabels': DeliverJob.type_
+            'name': job.address,
+            'desc': job.description,
+            'idLabels': job.type_
         }
     
         response = requests.post(url,  headers=self.headers, params=query, timeout=1000)
         # oper_info = json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(",", ": "))
         time = datetime.utcnow().strftime('%d.%m.%Y %H:%M')
         card_id = response.text[7:31]
-        self.custom_field_area(card_id, DeliverJob.custom_field_id)
+        self.custom_field_area(card_id, value=job.custom_field_id, user_name=job.user_name)
         
         with open('log.txt', 'a', encoding='utf-8') as file:
-            file.write((f'\n{time}\tStatus: {"Done" if response.status_code==200 else "Error"}\tAction: create card'))      
+            file.write((f'\n{time}\tStatus: {"Done" if response.status_code==200 else "Error"}\tAction: create card\tUser: {job.user_name}'))      
             
-        print(f'\n Status: {"Done" if response.status_code==200 else "Error"}\tAction: create card')
+        print(f'\n Status: {"Done" if response.status_code==200 else "Error"}\tAction: create card\tUser: {job.user_name}')
 
-    def custom_field_area(self, card_id, value=None):
+    def custom_field_area(self, card_id, user_name, value=None):
         url = f"https://api.trello.com/1/cards/{card_id}/customField/{custom_field_id}/item"
 
         headers = {
@@ -65,7 +138,7 @@ class TrelloConnector:
 
         response = requests.request("PUT", url, data=payload, headers=headers, params=query, timeout=1000)
 
-        print(f'\n Status: {"Done" if response.status_code==200 else "Error"}\tAction: custom_field to card')
+        print(f'\n Status: {"Done" if response.status_code==200 else {response.status_code}}\tAction: custom_field to card\tUser: {user_name}, text:{response.text}')
           
 
     def get_label_info(self):
@@ -131,76 +204,7 @@ class TrelloConnector:
             f.write(response.content)
         print(response.status_code)
         
-class DeliverJob:
-    from_client_label = '6315d77a20bc67029658fd2f'
-    to_client_label = '6315d77a20bc67029658fd38'
-    
-    def __init__(self, address, type_, description):
-        self.address = address
-        self.type_ = type_
-        self.description = description
-        self.area = address
-        self.custom_field_id = self.get_custom_field_id(self._area)
-        
-    def get_custom_field_id(self, area):
-        if area != 'Не определено':
-            _id = [k for k, v in areas_id.items() if area == v][0]
-            return _id
-        return ''
-        
-        
-    @property
-    def description(self):
-        return self._description
-    
-    @description.setter
-    def description(self, value):
-        if isinstance(value, list):
-            self._description = ' '.join(value)
-        else:
-            self._description = value.title()
 
-    @property
-    def type_(self):
-        return self._type
-    
-    @type_.setter
-    def type_(self, value):
-        pattern = ['доставка', 'доставить', 'клиенту', 'к', 'до']
-        self._type = self.to_client_label if value.lower() in pattern else self.from_client_label
-    
-    @property
-    def address(self):
-        return self._address
-    
-    @address.setter
-    def address(self, value):
-        self._address = value.title()
-        
-    @property
-    def area(self):
-        return self._area
-    
-    @area.setter
-    def area(self, value):
-        def is_it_num(s):
-            for i in s:
-                try:
-                    int(i)
-                    return False
-                except ValueError:
-                    return True
-                
-        t =value.split(',')[0].split()
-        temp = [x for x in t if  all(map(is_it_num, x)) ]
-        street = ' '.join(temp).lower()
-        
-        for k, v in streets_map.items():
-            if street in v:
-                self._area = k
-                break
-        else:
-            self._area = 'Не определено'
 
                 
 
@@ -218,22 +222,23 @@ async def send_welcome_(message):
     await bot.send_message(last_chat_id, '🤖')
     await bot.send_message(last_chat_id, "Привет! я могу добавить задание на доставку кроссовок.\nНапиши про доставку в таком формате")
     await bot.send_message(last_chat_id, '🏠 адрес: ???\n📌 что делаем: забрать/доставить\n✍🏼 описание: ???')
-    await bot.send_message(last_chat_id, '*Например:*\nвайнера 9\nзабрать\n2 этаж, кв43, 88002000600, 18:00-20:00 в пассаже ')
+    await bot.send_message(last_chat_id, '<b>Например:</b>\nвайнера 9\nзабрать\n2 этаж, кв43, 88002000600, 18:00-20:00 в пассаже ')
  
 @dp.message_handler()
 async def echo_all_(message):
     last_chat_id = message.from_user.id
+    user_name = message.from_user.first_name + ' ' + message.from_user.last_name
+    print(user_name)
     adress, type_, *text = message.text.split('\n')
     trello = TrelloConnector()
-    job = DeliverJob(adress, type_, text)
+    job = DeliverJob(adress, type_, text, user_name)
     trello.create_card(job)
     # bot.send_message(last_chat_id, '💡')
     await bot.send_message(last_chat_id, '🏠⬅️👟' if job.type_ != '6315d77a20bc67029658fd38' else '👟➡️🙋🏽‍♂️')
     await bot.send_message(last_chat_id, f'Карточка <b>{job.address}</b> добавлена!')
  
 if __name__ == '__main__':
-    print('_____________________________________________________\n_______________ Bot status: Online __________________\n\n')
     executor.start_polling(dp, skip_updates=True)
-    print('\n\n_____________________________________________________\n_______________ Bot status: offline _________________')
+
     
     
