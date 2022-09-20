@@ -1,15 +1,17 @@
 import json
 import requests
+import os
 from datetime import datetime
-from settings import trello_api_key as api_key
-from settings import my_token as my_token
-from settings import id_board
-from settings import todo_list_id
-from settings import bot_key
-from settings import custom_field_id
 from streets_list import streets_map
 import logging
 from aiogram import Bot, Dispatcher, executor, types
+
+api_key = os.getenv('api_key')
+my_token = os.getenv('my_token')
+id_board = os.getenv('id_board')
+todo_list_id = os.getenv('todo_list_id')
+bot_key = os.getenv('bot_key')
+custom_field_id = os.getenv('custom_field_id')
 
 areas_id ={
 '631d9c91b9b1b40281c2b09e': 'Академический',
