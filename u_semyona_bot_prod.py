@@ -254,7 +254,7 @@ class TrelloConnector:
 
 logging.basicConfig(level=logging.INFO)
 
-PROXY_URL = 'https://proxy.server:3128'
+PROXY_URL = 'http://proxy.server:3128'
 
 bot = Bot(token=bot_key, parse_mode='HTML')
 dp = Dispatcher(bot)
