@@ -1,10 +1,19 @@
 import json
 import requests
 import os
+
 from datetime import datetime
 from streets_list import streets_map
+
+# from aiogram import Bot, Dispatcher, executor, types
+
+
+import asyncio
 import logging
-from aiogram import Bot, Dispatcher, executor, types
+
+from aiogram import Bot, types
+from aiogram.dispatcher import Dispatcher
+from aiogram.utils.executor import start_webhook
 
 api_key = os.getenv('api_key')
 my_token = os.getenv('my_token')
@@ -251,12 +260,20 @@ class TrelloConnector:
                 
 
 # telegram bot
+API_TOKEN = bot_key
+
+WEBHOOK_HOST = 'https://your.domain'  # Domain name or IP addres which your bot is located.
+WEBHOOK_PATH = '/path/to/api'
+WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
+
+# webserver settings
+WEBAPP_HOST = 'localhost'  # or ip
+WEBAPP_PORT = 3001
 
 logging.basicConfig(level=logging.INFO)
 
-PROXY_URL = 'http://proxy.server:3128'
-
-bot = Bot(token=bot_key, parse_mode='HTML')
+loop = asyncio.get_event_loop()
+bot = Bot(token=API_TOKEN, loop=loop, parse_mode='HTML')
 dp = Dispatcher(bot)
 
 
@@ -281,8 +298,6 @@ async def echo_all_(message):
     await bot.send_message(last_chat_id, '🏠⬅️👟' if job.type_ != '6315d77a20bc67029658fd38' else '👟➡️🙋🏽‍♂️')
     await bot.send_message(last_chat_id, f'Карточка <b>{job.address}</b> добавлена!')
  
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
 
     
     
